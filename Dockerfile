@@ -1,13 +1,21 @@
-FROM node:16
+FROM node:16 AS frontend
 
-WORKDIR /var/temp
+WORKDIR /var/tmp
 
 ADD package.json .
 ADD package-lock.json .
 
-RUN npm install 
+RUN npm install
 
-COPY . .
-EXPOSE 4200
+RUN npx ngcc --properties es2015 browser module main --first-only --create-ivy-entry-points
 
-CMD [ "npm",'start' ]
+ADD . .
+
+RUN npm run build -- -c production
+
+
+FROM nginx:stable
+
+COPY --from=frontend /var/tmp/dist/heroesApp /usr/share/nginx/html
+
+EXPOSE 80
